@@ -12,7 +12,7 @@ import (
 
 func TestValidRequest(t *testing.T) {
 	// start the server process
-	x := exec.Command("./../serious/s.exe")
+	x := exec.Command("./../Server/server.exe")
 	starterr := x.Start()
 	if starterr != nil {
 		t.Errorf("Could not start server executable")
@@ -55,15 +55,16 @@ func TestValidRequest(t *testing.T) {
 
 	resp, _ = http.Get("http://localhost:8100/stats")
 	body, _ = ioutil.ReadAll(resp.Body)
-	t.Log(string(body))
+	if strings.Contains(string(body), "{\"total\":1,\"average\":") == false {
+		t.Errorf("Wrong stats response")
+	}
 	resp.Body.Close()
 }
 
 func TestShutdown(t *testing.T) {
 	// start the server process
-	x := exec.Command("./../serious/s.exe")
+	x := exec.Command("./../Server/server.exe")
 	x.Start()
-	pid := x.Process.Pid
 
 	// send a hash request
 	_, posterr := http.PostForm("http://localhost:8100/hash", url.Values{"password": {"angryMonkey"}})
@@ -96,7 +97,7 @@ func TestShutdown(t *testing.T) {
 
 func TestManyRequests(t *testing.T) {
 	// start the server process
-	x := exec.Command("./../serious/s.exe")
+	x := exec.Command("./../Server/server.exe")
 	x.Start()
 	//pid := x.Process.Pid//
 
