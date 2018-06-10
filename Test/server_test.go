@@ -165,6 +165,7 @@ func checkAcceptingConnections() bool {
 	return err == nil
 }
 
+// helper method to send a request
 func SendRequest(t *testing.T) {
 	// send a hash request
 	post, posterr := http.PostForm("http://localhost:8080/hash", url.Values{"password": {"angryMonkey"}})
