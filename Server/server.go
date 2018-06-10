@@ -14,12 +14,12 @@ import (
 )
 
 // global variables
-var done chan bool              // channel to signal the main thread that the server has been closed
-var mapLock sync.RWMutex        // read/write mutex to the map that contains the sha256 hashes
-var shaMap map[uint64]string    // container that maps sequence number to sha256 hash
+var done chan bool              // channel to signal the main thread that the process can end
+var mapLock sync.RWMutex        // read/write mutex to the map that contains the sha512 hashes
+var shaMap map[uint64]string    // container that maps sequence number to sha512 hash
 var elapsedTime time.Duration   // variable to keep track of total processing time
 var globalSequenceNumber uint64 // variable to keep track of sequence numbers
-var processedCount uint64       // variable to keep track of sha256 calculations
+var processedCount uint64       // variable to keep track of sha512 calculations count
 var srv *http.Server            // reference to the http server
 var shuttingdown bool
 
@@ -64,7 +64,7 @@ func handleGetHashRequest(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-// Function that handles the request to calculate a new sha256 hash value
+// Function that handles the request to calculate a new sha512 hash value
 // for the specified password.
 func handlePostHashRequest(writer http.ResponseWriter, request *http.Request) {
 	// check if this is a POST request
@@ -152,7 +152,7 @@ func handleStatisticsRequest(writer http.ResponseWriter, request *http.Request) 
 	}
 }
 
-// This function handles requests received on the /shutdown endpoint
+// This function handles requests received on the /shutdown endpoint.
 func handleShutdownRequest(writer http.ResponseWriter, request *http.Request) {
 	// reply to the request
 	http.Error(writer, http.StatusText(http.StatusOK), http.StatusOK)
@@ -161,9 +161,11 @@ func handleShutdownRequest(writer http.ResponseWriter, request *http.Request) {
 	go processShutdown()
 }
 
+// This function is called when a shutdown request is received, and checks whether
+// a shutdown is pending, and if not, initiate the shutdown process.
 func processShutdown() {
 	// use the (Write) lock used for shaMap, since the handleHash functions
-	// usee this as well to check for pending shutdown
+	// use this as well to check for pending shutdown
 	mapLock.Lock()
 	defer mapLock.Unlock()
 
@@ -175,9 +177,9 @@ func processShutdown() {
 }
 
 // This function checks if all requests have been processed.
-// Only call this function with a lock on mapLock
+// Only call this function with a lock on mapLock.
 func verifyShutdownStatus() {
-	if shuttingdown == true && processedCount == globalSequenceNumber {
+	if shuttingdown == true && processedCount == atomic.LoadUint64(&globalSequenceNumber) {
 		done <- true
 	}
 }
@@ -198,7 +200,7 @@ func logIssues(function HandleFunction) HandleFunction {
 	}
 }
 
-// This function initializes the global variables
+// This function initializes the global variables.
 func initGlobalVariables() {
 	done = make(chan bool)
 	mapLock = sync.RWMutex{}
@@ -208,7 +210,7 @@ func initGlobalVariables() {
 	shuttingdown = false
 }
 
-// This function sets up the endpoint handlers
+// This function sets up the endpoint handlers.
 func setupEndpointHandlers() {
 	http.HandleFunc("/hash", logIssues(handlePostHashRequest))     // for POST requests with a password
 	http.HandleFunc("/hash/", logIssues(handleGetHashRequest))     // for GET requests with a sequence number
@@ -224,7 +226,7 @@ func main() {
 	setupEndpointHandlers()
 
 	// start the server
-	srv = &http.Server{Addr: "localhost:8100"}
+	srv = &http.Server{Addr: "localhost:8080"}
 	err := srv.ListenAndServe()
 
 	// The ListenAndServe function exists either due to an error starting the http listener,
