@@ -127,8 +127,6 @@ func processHashRequest(value string, sequenceNumber uint64) {
 
 // This function handles requests on the /stat endpoint.
 func handleStatisticsRequest(writer http.ResponseWriter, request *http.Request) {
-	fmt.Println(request.RequestURI)
-
 	if request.Method != "GET" {
 		http.Error(writer, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
